@@ -1,6 +1,6 @@
-# UFO Game usign HeaderTrackr.js to control it
+# UFO Game using HeaderTrackr.js to control it
 
-A Vue Component that can be used to play a game using headmovement from your webcam
+A Vue Component that can be used to play a game using head movement from your webcam
 
 ## Getting Started
 
