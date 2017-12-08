@@ -1,11 +1,33 @@
 <template>
     <div>
+        <div class="row" id="holder">
+        </div>
         <div class="row formHolder">
             <h4>Headtracker.js</h4>
+            <p>Note: Broken on Safari at the moment.</p>
+            <p>Simple Game, allow your webcam to see your face. Then move your head in the direction you want the space ship to move trying to hit the aliens.</p>
+            
             <canvas id="inputCanvas" width="320" height="240" style="display:none"></canvas>
-            <video id="inputVideo" autoplay loop></video>
+            <video id="inputVideo" autoplay loop playsinline></video>
         </div>
-        <div class="row" id="holder">
+        
+        <p>Feel free to use this or fork, available on <a href="https://github.com/rbaskam/headtrackerUfoGame" target="_blank">Github</a></a></p>
+        <div v-if="!loading">
+            <span><a href="/login">Login</a> or <a href="/register">Register</a> to add your scores.</span>
+            <table class="table table-striped">
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Score</th>
+                </tr>
+                </thead>
+                <tbody>
+                    <tr v-for="score in scores">
+                        <td></td>
+                        <td></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
     
@@ -15,6 +37,7 @@
     export default {
         mounted() {
             this.startHeadTracr();
+            this.getGameScores();
         },
         data() {
             return {
@@ -22,11 +45,18 @@
                x: 0,
                y: 0,
                detected: false,
-               speed: 1
+               speed: 1,
+               category: 'high',
+               scores: [], 
+               loading: true
             }
         },
 
         methods: {
+            getGameScores: function() {
+                //Load you high scores from a route here and assign them to this.scores
+                //The set this.loading to false to show the scores
+            },
             startHeadTracr: function() {
                 var videoInput = document.getElementById('inputVideo');
                 var canvasInput = document.getElementById('inputCanvas');
@@ -66,6 +96,10 @@
                 canvas.height = 480;
                 theDiv.appendChild(canvas);
 
+                // Game Vars
+                var gameStarted = false;
+                var isGameOver = false;
+
                 // Background image
                 var bgReady = false;
                 var bgImage = new Image();
@@ -100,16 +134,34 @@
                 // Reset the game when the player catches a monster
                 var reset = function () {
                     self.speed = self.speed + 0.1;
-                    hero.x = canvas.width / 2;
-                    hero.y = canvas.height / 2;
+                    if (!gameStarted) {
+                        hero.x = canvas.width / 2;
+                        hero.y = canvas.height / 2;
+                        gameStarted = true;
+                    }
 
                     // Throw the monster somewhere on the screen randomly
                     monster.x = 32 + (Math.random() * (canvas.width - 64));
                     monster.y = 32 + (Math.random() * (canvas.height - 64));
                 };
 
+                //Game Over
+                var gameOver= function () {
+                    monster = {}
+                    isGameOver = true;
+                    hero.x = canvas.width / 2;
+                    hero.y = canvas.height / 2;
+                    if (monstersCaught > 0) {
+                        //Send to your route to save scores
+                    }
+                }
+
                 // Update game objects
                 var update = function (x,y) {
+                    //Check if game is still running
+                    if (isGameOver) {
+                        return;
+                    }
                     //Player Moved there head up
                     if (self.y < y) { 
                         hero.y -= self.speed;
@@ -126,7 +178,16 @@
                     if (self.x < x) { 
                         hero.x += self.speed;
                     }
-                
+
+                    //Have they touched the side of the screen
+                    if ( hero.x >= (canvas.width + 16) || hero.x <= (0 - 16)) {
+                        gameOver();
+                    }
+
+                    if ( hero.y >= (canvas.height + 16) || hero.y <= (0 - 16)) {
+                        gameOver();
+                    }
+
                     // Are the two characters touching?
                     if (
                         hero.x <= (monster.x + 32)
@@ -137,6 +198,7 @@
                         ++monstersCaught;
                         reset();
                     }
+                    
                 };
 
                 // Draw everything
@@ -158,7 +220,11 @@
                     ctx.font = "24px Helvetica";
                     ctx.textAlign = "left";
                     ctx.textBaseline = "top";
-                    ctx.fillText("Goblins caught: " + monstersCaught, 32, 32);
+                    if (isGameOver) {
+                        ctx.fillText("Game Over: Total Aliens caught: " + monstersCaught, 32, 32);
+                    } else {
+                        ctx.fillText("Aliens caught: " + monstersCaught, 32, 32);
+                    }
                 };
 
                 // The main game loop
